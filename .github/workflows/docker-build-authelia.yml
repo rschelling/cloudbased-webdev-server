@@ -3,7 +3,7 @@ name: build custom docker image for authelia
 on:
   push:
     branches:
-      - "master"
+      - "main"
     paths:
       - "authelia/**"
 
