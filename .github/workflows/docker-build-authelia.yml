@@ -1,0 +1,37 @@
+name: build custom docker image for authelia
+
+on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - "authelia/**"
+
+jobs:
+  build-authelia:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up Docker BuildX
+        uses: docker/setup-buildx-action@v1
+
+      - name: login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push the custom Authelia Image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./authelia
+          push: true
+          tags: ghcr.io/GITHUB-USERNAME/authelia:latest
+          secrets: |
+            "AUTHELIA_JWT_SECRET=${{ secrets.AUTHELIA_JWT_SECRET }}"
+            "AUTHELIA_SESSION_SECRET=${{ secrets.AUTHELIA_SESSION_SECRET }}"
+            "AUTHELIA_STORAGE_ENCRYPTION_KEY=${{ secrets.AUTHELIA_STORAGE_ENCRYPTION_KEY }}"
+            "AUTHELIA_NOTIFIER_SMTP_PASSWORD=${{ secrets.AUTHELIA_NOTIFIER_SMTP_PASSWORD }}"

@@ -1,0 +1,66 @@
+---
+####################################################################################################
+# Cloudbased Webdevelopment Server                                                               #
+####################################################################################################
+
+version: "3.3"
+
+networks:
+  proxy:
+    external: true
+  authelia:
+    driver: bridge
+
+volumes:
+  authelia-data:
+    driver: local
+  redis-data:
+    driver: local
+
+services:
+  ################################
+  # Authentication with Authelia #
+  ################################
+  authelia:
+    image: ghcr.io/GITHUB-USERNAME/authelia:latest
+    container_name: authelia
+    volumes:
+      - authelia-data:/database
+    networks:
+      - proxy
+      - authelia
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`auth.server.MY-DOMAIN.de`)"
+      - "traefik.http.routers.authelia.entrypoints=https"
+      - "traefik.http.routers.authelia.tls=true"
+      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
+      - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://auth.server.MY-DOMAIN.de" # yamllint disable-line rule:line-length
+      - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email" # yamllint disable-line rule:line-length
+      - "traefik.docker.network=proxy"
+      - "com.centurylinklabs.watchtower.enable=true"
+    expose:
+      - 9091
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    environment:
+      - AUTHELIA_JWT_SECRET_FILE=/secrets/jwt
+      - AUTHELIA_SESSION_SECRET_FILE=/secrets/session
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE=/secrets/encryption
+      - AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE=/secrets/smtp
+      - TZ=Europe/Berlin
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - redis-data:/data
+    networks:
+      - authelia
+    expose:
+      - 6379
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin

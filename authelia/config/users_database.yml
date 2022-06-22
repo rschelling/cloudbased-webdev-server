@@ -1,0 +1,11 @@
+---
+###############################################################
+#                         Users Database                      #
+###############################################################
+
+# List of users
+users:
+  "USERNAME":
+    displayname: "JOHN DOE"
+    password: "MY-PASSWORD"
+    email: johndoe@example.com

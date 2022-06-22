@@ -1,0 +1,66 @@
+---
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+
+default_redirection_url: https://code.server.MY-DOMAIN.de
+theme: dark
+
+server:
+  host: 0.0.0.0
+  port: 9091
+
+log:
+  level: warn
+
+totp:
+  issuer: authelia.com
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    # Rules applied to everyone
+    - domain:
+        - auth.server.MY-DOMAIN.de
+      policy: bypass
+
+    - domain:
+        - proxy.server.MY-DOMAIN.de
+        - grafana.server.MY-DOMAIN.de
+        - vscode.server.MY-DOMAIN.de
+        - port-3000.server.MY-DOMAIN.de
+        - port-4200.server.MY-DOMAIN.de
+        - port-4400.server.MY-DOMAIN.de
+      policy: two_factor
+
+session:
+  name: authelia_session
+  expiration: 86400 # 1 day
+  inactivity: 3600 # 1 hour
+  domain: server.MY_DOMAIN.de # Should match whatever your root protected domain is
+
+  redis:
+    host: redis
+    port: 6379
+    # This secret can also be set using the env variables AUTHELIA_SESSION_REDIS_PASSWORD_FILE
+    # password: authelia
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  local:
+    path: /database/db.sqlite3
+
+notifier:
+  smtp:
+    username: me@example.com
+    host: SMTP-SERVER
+    port: 587
+    sender: me@example.com
