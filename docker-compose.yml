@@ -18,6 +18,8 @@ volumes:
     driver: local
   redis-data:
     driver: local
+  code-server-data:
+    driver: local
 
 services:
   ################################
@@ -125,3 +127,66 @@ services:
       WATCHTOWER_CLEANUP: "true"
       WATCHTOWER_LABEL_ENABLE: "true"
       WATCHTOWER_SCHEDULE: "0 */15 * * * *"
+
+  ###############
+  # Code Server #
+  ###############
+  code-server:
+    image: ghcr.io/<GITHUB_USERNAME>/code-server:latest
+    container_name: code-server
+    hostname: code-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Berlin
+      - SUDO_PASSWORD=123
+    volumes:
+      - code-server-data:/config
+    networks:
+      - proxy
+    expose:
+      - 8443
+      - 3000 # nextjs & react development server
+      - 4200 # nx development server
+      - 4400 # nx storybook
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+      # code-server app
+      - "traefik.http.routers.code-server.rule=Host(`vscode.server.<MY-DOMAIN>`)"
+      - "traefik.http.routers.code-server.entrypoints=https"
+      - "traefik.http.routers.code-server.tls=true"
+      - "traefik.http.routers.code-server.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.code-server.middlewares=authelia@docker"
+      - "traefik.http.routers.code-server.service=code-server-service"
+      - "traefik.http.services.code-server-service.loadbalancer.server.port=8443"
+
+      # port 3000
+      - "traefik.http.routers.code-server-port-3000.rule=Host(`port-3000.server.<MY-DOMAIN>`)"
+      - "traefik.http.routers.code-server-port-3000.entrypoints=https"
+      - "traefik.http.routers.code-server-port-3000.tls=true"
+      - "traefik.http.routers.code-server-port-3000.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.code-server-port-3000.middlewares=authelia@docker"
+      - "traefik.http.routers.code-server-port-3000.service=code-server-port-3000-service"
+      - "traefik.http.services.code-server-port-3000-service.loadbalancer.server.port=3000"
+
+      # port 4200
+      - "traefik.http.routers.code-server-port-4200.rule=Host(`port-4200.server.<MY-DOMAIN>`)"
+      - "traefik.http.routers.code-server-port-4200.entrypoints=https"
+      - "traefik.http.routers.code-server-port-4200.tls=true"
+      - "traefik.http.routers.code-server-port-4200.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.code-server-port-4200.middlewares=authelia@docker"
+      - "traefik.http.routers.code-server-port-4200.service=code-server-port-4200-service"
+      - "traefik.http.services.code-server-port-4200-service.loadbalancer.server.port=4200"
+
+      # port 4400
+      - "traefik.http.routers.code-server-port-4400.rule=Host(`port-4400.server.<MY-DOMAIN>`)"
+      - "traefik.http.routers.code-server-port-4400.entrypoints=https"
+      - "traefik.http.routers.code-server-port-4400.tls=true"
+      - "traefik.http.routers.code-server-port-4400.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.code-server-port-4400.middlewares=authelia@docker"
+      - "traefik.http.routers.code-server-port-4400.service=code-server-port-4400-service"
+      - "traefik.http.services.code-server-port-4400-service.loadbalancer.server.port=4400"
